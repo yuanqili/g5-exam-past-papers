@@ -134,9 +134,36 @@ PAPER_NOTES = {
  "TARA": "缩写说明：同一年份下合并展示。TSA = 思维能力评估（Thinking Skills Assessment）、BMAT = 生物医学入学考试（BioMedical Admissions Test），均为官方推荐用于 TARA 备考的代练真题。",
 }
 
+PAPER_INTRO = {
+ "STEP": [
+  "覆盖范围：1987–2025 连续。1994–2019 每年含 STEP 1/2/3；STEP 1 已于 2020 年停考，故 2020 年起仅有 STEP 2、STEP 3；1987–1993 为旧格式（原 Maths / Further A / Further B，对应 Paper 1/2/3）。",
+  "答案情况：2003 年及以前无官方解析；2004–2017 为「全卷打包」解析；2018 年起按卷拆分为解析 + 评分标准；2014 年起另含考官报告（报告胶囊）。",
+  "参考价值：现行只考 STEP 2 与 STEP 3，应作为备考重点。2018 年至今的真题与当前题型、难度最接近，优先限时精做；2018 年以前风格略有差异，仍是优质练习；1987–1993 旧格式可作能力拓展。",
+  "建议用法：先限时完成「试卷」，再对照「答案」，最后阅读「报告」了解评分标准与常见失分点。",
+ ],
+ "TMUA": [
+  "覆盖范围：2016–2023，外加一套早期样卷（Early Specimen）。2024 年起 TMUA 改由 UAT-UK 以 Pearson VUE 机考形式进行，官方不再发布 PDF 真题，因此没有 2024 及以后的年份。",
+  "每年内容：Paper 1（数学应用）+ Paper 2（数学推理），各配详解（Worked Answers）与答案速查（Answer Keys）。",
+  "参考价值：虽已转为机考，但考纲与题型保持不变，历年纸笔真题仍是最有效的练习材料，建议全部做完；机考界面与节奏可另用官方在线练习适应。",
+  "建议用法：限时做两卷 → 对照详解订正 → 用答案速查核对得分。",
+ ],
+ "ESAT": [
+  "为什么是 NSAA / ENGAA：ESAT 是 2024 年新启用的考试，官方没有可下载真题（样题仅为在线机考）。这里收录其前身 NSAA（自然科学）与 ENGAA（工程）的历年真题作为练习，覆盖 2016–2023（含 Specimen 样卷）。",
+  "每年内容：Section 1 与 Section 2 的题目及答案；同一年份下 NSAA 与 ENGAA 合并展示，文件名已标注所属考试。",
+  "新老变化与参考价值：ESAT 改为多模块机考（Mathematics 1 必考 + 按专业选考 Math 2 / 物理 / 化学 / 生物），但内容仍基于中学数理，与 NSAA/ENGAA 高度重合——其数学、物理、化学、生物题目仍极具参考价值；主要差异是由分卷纸笔改为分模块上机多选，需注意作答节奏。",
+  "建议用法：按目标专业所需模块，针对性选做对应科目的题目（如工程方向重点练 ENGAA 与数学/物理部分）。",
+ ],
+ "TARA": [
+  "为什么是 TSA / BMAT：TARA 是 2026 年入学起的全新考试，官方只有在线样题与考纲，没有历年真题。官方推荐用已停考的 TSA、BMAT 的 Section 1 作为代练，本页据此收录。",
+  "收录内容：TSA Section 1（2008–2023）+ Section 2 写作（2008–2022）+ 官方 Specimen 样卷；BMAT Section 1（2003–2023）。同一年份下合并展示，文件名标注所属考试。",
+  "为何只收这些：TARA 的「批判性思维」「问题解决」两个客观模块承接 TSA/BMAT Section 1 的命题传统，写作模块类似 TSA 写作，因此这些最具参考价值；BMAT 的 Section 2（科学知识）与 Section 3 与 TARA 无关，未收录。",
+  "建议用法：客观题练 TSA / BMAT 的 Section 1，写作练 TSA Section 2；新机考界面用官方在线样题适应。",
+ ],
+}
+
 payload = json.dumps({"PAPERS": PAPERS, "RES": RES, "DESC": DESC, "COURSES": COURSES,
-                      "NOTES": PAPER_NOTES, "COUNTS": counts, "TOTAL": total,
-                      "EXAMS": EXAMS, "BRAND": BRAND}, ensure_ascii=False)
+                      "NOTES": PAPER_NOTES, "INTRO": PAPER_INTRO, "COUNTS": counts,
+                      "TOTAL": total, "EXAMS": EXAMS, "BRAND": BRAND}, ensure_ascii=False)
 
 # ---------- HTML ----------
 TPL = r'''<!DOCTYPE html>
@@ -215,6 +242,9 @@ p.para{margin:0 0 10px;white-space:pre-wrap}
 .res{display:grid;grid-template-columns:1fr;gap:8px}
 .muted{color:var(--mut);font-size:13px}
 .pnote{background:#fff8ec;border:1px solid #f2e2c2;color:#7a5a1e;font-size:13px;line-height:1.7;padding:10px 13px;border-radius:10px;margin-bottom:14px}
+.pintro{margin:0;padding-left:20px}
+.pintro li{font-size:13.5px;color:#39414f;line-height:1.75;margin:6px 0}
+.pintro li::marker{color:var(--acc)}
 footer{text-align:center;color:var(--mut);font-size:12px;padding:26px 18px}
 @media(min-width:680px){.res{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.brand .sb{display:none}.hero .l1{font-size:22px}.nav button{padding:6px 12px;font-size:13px}}
@@ -299,9 +329,11 @@ function renderRes(){
 }
 function renderPapers(){
   const g=D.PAPERS[curExam]||[];if(!g.length)return`<section class="card"><div class="muted">暂无</div></section>`;
+  const intro=(D.INTRO||{})[curExam]||[];
+  const introHtml=intro.length?`<section class="card"><h3>如何使用本页</h3><ul class="pintro">${intro.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`:"";
   const note=(D.NOTES||{})[curExam];
   const noteHtml=note?`<div class="pnote">${esc(note)}</div>`:"";
-  return`<section class="card">${noteHtml}${g.map(grp=>`<div class="grp"><div class="gh"><span class="y">${esc(grp.header)}</span><span class="muted">· ${grp.files.length} 份</span></div><div class="files">${
+  return introHtml+`<section class="card">${noteHtml}${g.map(grp=>`<div class="grp"><div class="gh"><span class="y">${esc(grp.header)}</span><span class="muted">· ${grp.files.length} 份</span></div><div class="files">${
     grp.files.map(f=>`<a class="f" href="${enc(f.path)}" target="_blank"><span class="pill p-${f.pill}">${f.pill}</span><span class="nm">${esc(f.name)}</span><span class="sz">${sz(f.size)}</span></a>`).join("")
   }</div></div>`).join("")}</section>`;
 }
