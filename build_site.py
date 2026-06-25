@@ -53,6 +53,9 @@ def cn_name(exam, nm, t):
     d = DESC_CN.get(t, "答案")
     return (head + " · " + d) if head else d
 
+cos_map_path = os.path.join(ROOT, "cos_map.json")
+COS_MAP = json.load(open(cos_map_path, encoding="utf-8")) if os.path.exists(cos_map_path) else {}
+
 papers = {e: [] for e in EXAMS}      # 历年真题
 resources = {e: [] for e in EXAMS}   # 考纲资源 (Specifications + References)
 
@@ -84,11 +87,11 @@ for exam in EXAMS:
                 papers[exam].append({
                     "header": header, "sub": sub, "year": year, "spec": is_spec,
                     "pill": pill(t), "porder": PILL_ORDER[pill(t)],
-                    "name": name, "path": rel, "size": size,
+                    "name": name, "path": COS_MAP.get(rel, rel), "size": size,
                 })
             else:
                 resources[exam].append({
-                    "cat": category, "name": f[:-4], "path": rel, "size": size,
+                    "cat": category, "name": f[:-4], "path": COS_MAP.get(rel, rel), "size": size,
                     "kind": "考纲" if category == "Specifications" else "资料",
                 })
 
@@ -406,7 +409,7 @@ iframe{width:100%;height:100%;border:0;background:#fff;display:block}
 </div>
 <script>
 var p=new URLSearchParams(location.search).get("f")||"";
-var src=p.split("/").map(encodeURIComponent).join("/");
+var src=/^https?:\/\//i.test(p)?p:p.split("/").map(encodeURIComponent).join("/");
 var name=decodeURIComponent((p.split("/").pop()||"")).replace(/\.pdf$/i,"");
 document.getElementById("nm").textContent=name;
 if(name)document.title="航铂教育 · "+name;
