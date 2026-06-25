@@ -245,7 +245,14 @@ p.para{margin:0 0 10px;white-space:pre-wrap}
 .pintro{margin:0;padding-left:20px}
 .pintro li{font-size:13.5px;color:#39414f;line-height:1.75;margin:6px 0}
 .pintro li::marker{color:var(--acc)}
-footer{text-align:center;color:var(--mut);font-size:12px;padding:26px 18px}
+footer{border-top:1px solid var(--line);background:var(--card);padding:28px 18px;margin-top:22px}
+.foot{max-width:1040px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap}
+.foot .qr{width:158px;border-radius:12px;box-shadow:var(--shadow);display:block}
+.foot-txt{text-align:left;max-width:340px}
+.foot-h{font-size:17px;font-weight:800;color:var(--ink)}
+.foot-p{font-size:13.5px;color:#454e60;margin-top:7px;line-height:1.7}
+.foot-sub{font-size:12px;color:var(--mut);margin-top:16px}
+@media(max-width:540px){.foot{flex-direction:column;gap:14px}.foot-txt{text-align:center}}
 @media(min-width:680px){.res{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.brand .sb{display:none}.hero .l1{font-size:22px}.nav button{padding:6px 12px;font-size:13px}}
 </style>
@@ -260,7 +267,14 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:26px 18px}
   <div class="subtabs" id="subtabs"></div>
   <div id="content"></div>
 </div>
-<footer>© 航铂教育　·　共 <span id="tot"></span> 份资料　·　仅供个人备考学习使用</footer>
+<footer><div class="foot">
+  <img class="qr" src="assets/advisor-qr.png" alt="课程顾问企业微信二维码">
+  <div class="foot-txt">
+    <div class="foot-h">扫码添加课程顾问企业微信</div>
+    <div class="foot-p">获取专属课程资源、历年真题与一对一备考规划，了解航铂教育各考试课程方案。</div>
+    <div class="foot-sub">航铂教育　·　共 <span id="tot"></span> 份资料　·　仅供个人备考学习使用</div>
+  </div>
+</div></footer>
 <script>
 const D=__DATA__;
 let curExam=D.EXAMS[0], curTab="intro";
