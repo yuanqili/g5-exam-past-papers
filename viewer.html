@@ -23,13 +23,13 @@ iframe{width:100%;height:100%;border:0;background:#fff;display:block}
 </style>
 </head>
 <body>
-<div class="vbar"><span class="b">航铂教育</span><span class="nm" id="nm"></span><a id="open" target="_blank" rel="noopener">在新标签打开 ↗</a></div>
+<div class="vbar"><span class="b">航铂教育</span><span class="nm" id="nm"></span><a id="dl">下载 ⬇</a><a id="open" target="_blank" rel="noopener">在新标签打开 ↗</a></div>
 <div class="stage">
   <iframe id="fr" title="PDF"></iframe>
   <div class="load" id="load">
     <div class="spin"></div>
-    <div class="lt">正在加载 PDF…</div>
-    <div class="slow" id="slow" style="display:none">加载较慢？<a id="open2" target="_blank" rel="noopener">点此直接打开</a></div>
+    <div class="lt" id="lt">正在加载 PDF…</div>
+    <div class="slow" id="slow" style="display:none">没有自动打开？<a id="open2" target="_blank" rel="noopener">点此打开</a> · <a id="dl2">下载</a></div>
   </div>
 </div>
 <script>
@@ -38,12 +38,23 @@ var src=p.split("/").map(encodeURIComponent).join("/");
 var name=decodeURIComponent((p.split("/").pop()||"")).replace(/\.pdf$/i,"");
 document.getElementById("nm").textContent=name;
 if(name)document.title="航铂教育 · "+name;
-document.getElementById("open").href=src;
-document.getElementById("open2").href=src;
+var fname=decodeURIComponent((p.split("/").pop()||""));
+["open","open2"].forEach(function(id){document.getElementById(id).href=src;});
+["dl","dl2"].forEach(function(id){var a=document.getElementById(id);a.href=src;a.setAttribute("download",fname);});
 var fr=document.getElementById("fr"),load=document.getElementById("load");
-fr.onload=function(){load.classList.add("hide");};
-if(src)fr.src=src; else load.querySelector(".lt").textContent="未指定文件";
-setTimeout(function(){var s=document.getElementById("slow");if(!load.classList.contains("hide"))s.style.display="block";},6000);
+var isMobile=/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(navigator.userAgent)||window.innerWidth<700;
+if(!src){document.getElementById("lt").textContent="未指定文件";}
+else if(isMobile){
+  // 移动端浏览器多不支持 iframe 内嵌 PDF，直接跳转交给原生阅读器
+  fr.style.display="none";
+  document.getElementById("lt").textContent="正在打开 PDF…";
+  document.getElementById("slow").style.display="block";
+  setTimeout(function(){location.replace(src);},400);
+}else{
+  fr.onload=function(){load.classList.add("hide");};
+  fr.src=src;
+  setTimeout(function(){if(!load.classList.contains("hide"))document.getElementById("slow").style.display="block";},6000);
+}
 </script>
 </body>
 </html>
