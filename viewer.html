@@ -25,7 +25,7 @@ iframe{width:100%;height:100%;border:0;background:#fff;display:block}
 <body>
 <div class="vbar"><span class="b">航铂教育</span><span class="nm" id="nm"></span><a id="dl">下载 ⬇</a><a id="open" target="_blank" rel="noopener">在新标签打开 ↗</a></div>
 <div class="stage">
-  <iframe id="fr" title="PDF"></iframe>
+  <iframe id="fr" title="PDF" allow="fullscreen"></iframe>
   <div class="load" id="load">
     <div class="spin"></div>
     <div class="lt" id="lt">正在加载 PDF…</div>
@@ -34,26 +34,23 @@ iframe{width:100%;height:100%;border:0;background:#fff;display:block}
 </div>
 <script>
 var p=new URLSearchParams(location.search).get("f")||"";
-var src=/^https?:\/\//i.test(p)?p:p.split("/").map(encodeURIComponent).join("/");
-var name=decodeURIComponent((p.split("/").pop()||"")).replace(/\.pdf$/i,"");
+var isHttp=/^https?:\/\//i.test(p);
+var raw=isHttp?p:p.split("/").map(encodeURIComponent).join("/");
+// COS 公有读对象用「数据万象文档预览」渲染为 HTML，规避浏览器把 PDF 当下载
+var preview=isHttp?(raw+(raw.indexOf("?")>-1?"&":"?")+"ci-process=doc-preview&dstType=html"):raw;
+var name=decodeURIComponent((p.split("/").pop()||"")).replace(/\?.*$/,"").replace(/\.pdf$/i,"");
 document.getElementById("nm").textContent=name;
 if(name)document.title="航铂教育 · "+name;
-var fname=decodeURIComponent((p.split("/").pop()||""));
-["open","open2"].forEach(function(id){document.getElementById(id).href=src;});
-["dl","dl2"].forEach(function(id){var a=document.getElementById(id);a.href=src;a.setAttribute("download",fname);});
+var fname=decodeURIComponent((p.split("/").pop()||"")).replace(/\?.*$/,"");
+["open","open2"].forEach(function(id){document.getElementById(id).href=preview;});
+["dl","dl2"].forEach(function(id){var a=document.getElementById(id);a.href=raw;a.setAttribute("download",fname);});
 var fr=document.getElementById("fr"),load=document.getElementById("load");
-var isMobile=/Android|iPhone|iPad|iPod|Mobile|Silk/i.test(navigator.userAgent)||window.innerWidth<700;
-if(!src){document.getElementById("lt").textContent="未指定文件";}
-else if(isMobile){
-  // 移动端浏览器多不支持 iframe 内嵌 PDF，直接跳转交给原生阅读器
-  fr.style.display="none";
-  document.getElementById("lt").textContent="正在打开 PDF…";
-  document.getElementById("slow").style.display="block";
-  setTimeout(function(){location.replace(src);},400);
+if(!p){
+  document.getElementById("lt").textContent="未指定文件";
 }else{
   fr.onload=function(){load.classList.add("hide");};
-  fr.src=src;
-  setTimeout(function(){if(!load.classList.contains("hide"))document.getElementById("slow").style.display="block";},6000);
+  fr.src=preview;
+  setTimeout(function(){if(!load.classList.contains("hide"))document.getElementById("slow").style.display="block";},5000);
 }
 </script>
 </body>
