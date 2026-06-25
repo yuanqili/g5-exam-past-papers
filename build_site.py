@@ -72,11 +72,19 @@ for exam in EXAMS:
                 glabel = " ".join(rest) if rest else "—"
                 ym = re.search(r'(19|20)\d{2}', glabel)
                 year = int(ym.group(0)) if ym else 0
-                header = (sub + " " if sub else "") + glabel
+                is_spec = "Specimen" in glabel or "specimen" in glabel
+                base_name = cn_name(exam, f, t)
+                if exam in ("ESAT", "TARA"):
+                    # 用户按年份找：同一年内合并不同子考试，文件名前标注子考试
+                    header = glabel if is_spec else str(year)
+                    name = (sub + " · " + base_name) if sub else base_name
+                else:
+                    header = glabel
+                    name = base_name
                 papers[exam].append({
-                    "header": header, "sub": sub, "year": year,
+                    "header": header, "sub": sub, "year": year, "spec": is_spec,
                     "pill": pill(t), "porder": PILL_ORDER[pill(t)],
-                    "name": cn_name(exam, f, t), "path": rel, "size": size,
+                    "name": name, "path": rel, "size": size,
                 })
             else:
                 resources[exam].append({
@@ -85,20 +93,26 @@ for exam in EXAMS:
                 })
 
 # group papers by header, sort groups (sub asc, specimen last, year desc)
+def disp_header(h):
+    if h.isdigit():
+        return h + " 年"
+    return (h.replace("Early Specimen", "早期样卷")
+             .replace("Specimen", "样卷"))
+
 def group_papers(items):
     groups = {}
     for it in items:
         groups.setdefault(it["header"], []).append(it)
     def gkey(h):
         its = groups[h]
-        sub = its[0]["sub"]
-        yr = its[0]["year"]
-        spec = 1 if yr == 0 else 0          # specimens / no-year last within sub
-        return (sub, spec, -yr, h)
+        gspec = 1 if any(x["spec"] for x in its) else 0   # 样卷类排最后
+        gyear = max((x["year"] for x in its), default=0)
+        return (gspec, -gyear, h)
     ordered = []
     for h in sorted(groups, key=gkey):
-        arr = sorted(groups[h], key=lambda x: (x["porder"], x["name"]))
-        ordered.append({"header": h, "files": arr})
+        # 组内：先按子考试，再按类型(试卷/答案/报告)，再按名称
+        arr = sorted(groups[h], key=lambda x: (x["sub"], x["porder"], x["name"]))
+        ordered.append({"header": disp_header(h), "files": arr})
     return ordered
 
 PAPERS = {e: group_papers(papers[e]) for e in EXAMS}
@@ -115,9 +129,14 @@ COURSES = json.load(open(courses_path, encoding="utf-8")) if os.path.exists(cour
 counts = {e: len(papers[e]) + len(resources[e]) for e in EXAMS}
 total = sum(counts.values())
 
+PAPER_NOTES = {
+ "ESAT": "缩写说明：同一年份下合并展示。ENGAA = 工程入学测试（Engineering Admissions Assessment）、NSAA = 自然科学入学测试（Natural Sciences Admissions Assessment），二者均为 ESAT 的前身真题，可用于练习。",
+ "TARA": "缩写说明：同一年份下合并展示。TSA = 思维能力评估（Thinking Skills Assessment）、BMAT = 生物医学入学考试（BioMedical Admissions Test），均为官方推荐用于 TARA 备考的代练真题。",
+}
+
 payload = json.dumps({"PAPERS": PAPERS, "RES": RES, "DESC": DESC, "COURSES": COURSES,
-                      "COUNTS": counts, "TOTAL": total, "EXAMS": EXAMS,
-                      "BRAND": BRAND}, ensure_ascii=False)
+                      "NOTES": PAPER_NOTES, "COUNTS": counts, "TOTAL": total,
+                      "EXAMS": EXAMS, "BRAND": BRAND}, ensure_ascii=False)
 
 # ---------- HTML ----------
 TPL = r'''<!DOCTYPE html>
@@ -134,8 +153,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 a{color:var(--acc);text-decoration:none}
 .bar{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .bar .in{max-width:1040px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.brand{font-weight:800;font-size:18px;letter-spacing:.5px;color:var(--acc);white-space:nowrap}
-.brand small{color:var(--mut);font-weight:500;font-size:12px;margin-left:8px;letter-spacing:0}
+.brand{font-size:16px;white-space:nowrap;display:inline-flex;align-items:baseline;gap:9px}
+.brand b{font-weight:800;color:var(--acc)}
+.brand .sb{font-weight:400;color:var(--mut);font-size:16px}
 .nav{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
 .nav button{border:1px solid var(--line);background:var(--card);color:var(--mut);padding:7px 16px;border-radius:999px;font-size:14px;cursor:pointer;font-weight:600;transition:.15s}
 .nav button.on{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -194,14 +214,15 @@ p.para{margin:0 0 10px;white-space:pre-wrap}
 .f .sz{color:var(--mut);font-size:12px;white-space:nowrap}
 .res{display:grid;grid-template-columns:1fr;gap:8px}
 .muted{color:var(--mut);font-size:13px}
+.pnote{background:#fff8ec;border:1px solid #f2e2c2;color:#7a5a1e;font-size:13px;line-height:1.7;padding:10px 13px;border-radius:10px;margin-bottom:14px}
 footer{text-align:center;color:var(--mut);font-size:12px;padding:26px 18px}
 @media(min-width:680px){.res{grid-template-columns:1fr 1fr}}
-@media(max-width:520px){.brand small{display:none}.hero h1{font-size:21px}.nav button{padding:6px 12px;font-size:13px}}
+@media(max-width:560px){.brand .sb{display:none}.hero .l1{font-size:22px}.nav button{padding:6px 12px;font-size:13px}}
 </style>
 </head>
 <body>
 <div class="bar"><div class="in">
-  <span class="brand">航铂教育<small>英国 G5 入学笔试真题库</small></span>
+  <span class="brand"><b>航铂教育</b><span class="sb">英国 G5 入学笔试真题库</span></span>
   <nav class="nav" id="nav"></nav>
 </div></div>
 <div class="wrap">
@@ -278,7 +299,9 @@ function renderRes(){
 }
 function renderPapers(){
   const g=D.PAPERS[curExam]||[];if(!g.length)return`<section class="card"><div class="muted">暂无</div></section>`;
-  return`<section class="card">${g.map(grp=>`<div class="grp"><div class="gh"><span class="y">${esc(grp.header)}</span><span class="muted">· ${grp.files.length} 份</span></div><div class="files">${
+  const note=(D.NOTES||{})[curExam];
+  const noteHtml=note?`<div class="pnote">${esc(note)}</div>`:"";
+  return`<section class="card">${noteHtml}${g.map(grp=>`<div class="grp"><div class="gh"><span class="y">${esc(grp.header)}</span><span class="muted">· ${grp.files.length} 份</span></div><div class="files">${
     grp.files.map(f=>`<a class="f" href="${enc(f.path)}" target="_blank"><span class="pill p-${f.pill}">${f.pill}</span><span class="nm">${esc(f.name)}</span><span class="sz">${sz(f.size)}</span></a>`).join("")
   }</div></div>`).join("")}</section>`;
 }
