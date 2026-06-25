@@ -84,7 +84,7 @@ footer{border-top:1px solid var(--line);background:var(--card);padding:28px 18px
 .foot-h{font-size:17px;font-weight:800;color:var(--ink)}
 .foot-p{font-size:13.5px;color:#454e60;margin-top:7px;line-height:1.7}
 .foot-sub{font-size:12px;color:var(--mut);margin-top:16px}
-@media(max-width:540px){.foot{flex-direction:column;gap:14px}.foot-txt{text-align:center}}
+@media(max-width:540px){.foot{flex-direction:column;gap:14px}.foot-txt{text-align:center;max-width:100%}.foot .qr{width:100%}}
 @media(min-width:680px){.res{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.brand .sb{display:none}.hero .l1{font-size:22px}.nav button{padding:6px 12px;font-size:13px}}
 </style>
@@ -113,6 +113,7 @@ let curExam=D.EXAMS[0], curTab="intro";
 const TABS=[["intro","考试介绍"],["course","航铂课程"],["res","考纲资源"],["papers","历年真题"]];
 const esc=s=>(s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 const enc=p=>p.split("/").map(encodeURIComponent).join("/");
+const pdfHref=p=>"viewer.html?f="+encodeURIComponent(p);
 const sz=b=>b>1048576?(b/1048576).toFixed(1)+" MB":Math.round(b/1024)+" KB";
 
 function nav(){
@@ -170,7 +171,7 @@ function renderCourse(){
 function renderRes(){
   const r=D.RES[curExam]||[];if(!r.length)return`<section class="card"><div class="muted">暂无</div></section>`;
   const specs=r.filter(x=>x.cat==="Specifications"),refs=r.filter(x=>x.cat!=="Specifications");
-  const card=(title,arr)=>arr.length?`<section class="card"><h3>${title}</h3><div class="res">${arr.map(x=>`<a class="f" href="${enc(x.path)}" target="_blank"><span class="pill p-报告">${x.kind}</span><span class="nm">${esc(x.name)}</span><span class="sz">${sz(x.size)}</span></a>`).join("")}</div></section>`:"";
+  const card=(title,arr)=>arr.length?`<section class="card"><h3>${title}</h3><div class="res">${arr.map(x=>`<a class="f" href="${pdfHref(x.path)}" target="_blank"><span class="pill p-报告">${x.kind}</span><span class="nm">${esc(x.name)}</span><span class="sz">${sz(x.size)}</span></a>`).join("")}</div></section>`:"";
   return card("官方考纲",specs)+card("教材与参考资料",refs);
 }
 function renderPapers(){
@@ -180,7 +181,7 @@ function renderPapers(){
   const note=(D.NOTES||{})[curExam];
   const noteHtml=note?`<div class="pnote">${esc(note)}</div>`:"";
   return introHtml+`<section class="card">${noteHtml}${g.map(grp=>`<div class="grp"><div class="gh"><span class="y">${esc(grp.header)}</span><span class="muted">· ${grp.files.length} 份</span></div><div class="files">${
-    grp.files.map(f=>`<a class="f" href="${enc(f.path)}" target="_blank"><span class="pill p-${f.pill}">${f.pill}</span><span class="nm">${esc(f.name)}</span><span class="sz">${sz(f.size)}</span></a>`).join("")
+    grp.files.map(f=>`<a class="f" href="${pdfHref(f.path)}" target="_blank"><span class="pill p-${f.pill}">${f.pill}</span><span class="nm">${esc(f.name)}</span><span class="sz">${sz(f.size)}</span></a>`).join("")
   }</div></div>`).join("")}</section>`;
 }
 function render(){

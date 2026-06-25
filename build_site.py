@@ -252,7 +252,7 @@ footer{border-top:1px solid var(--line);background:var(--card);padding:28px 18px
 .foot-h{font-size:17px;font-weight:800;color:var(--ink)}
 .foot-p{font-size:13.5px;color:#454e60;margin-top:7px;line-height:1.7}
 .foot-sub{font-size:12px;color:var(--mut);margin-top:16px}
-@media(max-width:540px){.foot{flex-direction:column;gap:14px}.foot-txt{text-align:center}}
+@media(max-width:540px){.foot{flex-direction:column;gap:14px}.foot-txt{text-align:center;max-width:100%}.foot .qr{width:100%}}
 @media(min-width:680px){.res{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.brand .sb{display:none}.hero .l1{font-size:22px}.nav button{padding:6px 12px;font-size:13px}}
 </style>
@@ -281,6 +281,7 @@ let curExam=D.EXAMS[0], curTab="intro";
 const TABS=[["intro","考试介绍"],["course","航铂课程"],["res","考纲资源"],["papers","历年真题"]];
 const esc=s=>(s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 const enc=p=>p.split("/").map(encodeURIComponent).join("/");
+const pdfHref=p=>"viewer.html?f="+encodeURIComponent(p);
 const sz=b=>b>1048576?(b/1048576).toFixed(1)+" MB":Math.round(b/1024)+" KB";
 
 function nav(){
@@ -338,7 +339,7 @@ function renderCourse(){
 function renderRes(){
   const r=D.RES[curExam]||[];if(!r.length)return`<section class="card"><div class="muted">暂无</div></section>`;
   const specs=r.filter(x=>x.cat==="Specifications"),refs=r.filter(x=>x.cat!=="Specifications");
-  const card=(title,arr)=>arr.length?`<section class="card"><h3>${title}</h3><div class="res">${arr.map(x=>`<a class="f" href="${enc(x.path)}" target="_blank"><span class="pill p-报告">${x.kind}</span><span class="nm">${esc(x.name)}</span><span class="sz">${sz(x.size)}</span></a>`).join("")}</div></section>`:"";
+  const card=(title,arr)=>arr.length?`<section class="card"><h3>${title}</h3><div class="res">${arr.map(x=>`<a class="f" href="${pdfHref(x.path)}" target="_blank"><span class="pill p-报告">${x.kind}</span><span class="nm">${esc(x.name)}</span><span class="sz">${sz(x.size)}</span></a>`).join("")}</div></section>`:"";
   return card("官方考纲",specs)+card("教材与参考资料",refs);
 }
 function renderPapers(){
@@ -348,7 +349,7 @@ function renderPapers(){
   const note=(D.NOTES||{})[curExam];
   const noteHtml=note?`<div class="pnote">${esc(note)}</div>`:"";
   return introHtml+`<section class="card">${noteHtml}${g.map(grp=>`<div class="grp"><div class="gh"><span class="y">${esc(grp.header)}</span><span class="muted">· ${grp.files.length} 份</span></div><div class="files">${
-    grp.files.map(f=>`<a class="f" href="${enc(f.path)}" target="_blank"><span class="pill p-${f.pill}">${f.pill}</span><span class="nm">${esc(f.name)}</span><span class="sz">${sz(f.size)}</span></a>`).join("")
+    grp.files.map(f=>`<a class="f" href="${pdfHref(f.path)}" target="_blank"><span class="pill p-${f.pill}">${f.pill}</span><span class="nm">${esc(f.name)}</span><span class="sz">${sz(f.size)}</span></a>`).join("")
   }</div></div>`).join("")}</section>`;
 }
 function render(){
@@ -368,3 +369,55 @@ render();
 out = TPL.replace("__DATA__", payload)
 open(os.path.join(ROOT, "index.html"), "w", encoding="utf-8").write(out)
 print("index.html written:", len(out), "bytes; total files:", total, counts)
+
+VIEWER = r'''<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>航铂教育 · 文档查看</title>
+<style>
+:root{--acc:#2f6bff}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f6f8fc;display:flex;flex-direction:column;height:100vh;height:100dvh}
+.vbar{background:#fff;border-bottom:1px solid #e6eaf2;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.vbar .b{font-weight:800;color:var(--acc);white-space:nowrap}
+.vbar .nm{font-size:13px;color:#454e60;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vbar a{font-size:13px;color:var(--acc);text-decoration:none;white-space:nowrap;font-weight:600}
+.stage{flex:1;position:relative;min-height:0}
+iframe{width:100%;height:100%;border:0;background:#fff;display:block}
+.load{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#f6f8fc;transition:opacity .35s}
+.load.hide{opacity:0;pointer-events:none}
+.spin{width:44px;height:44px;border:4px solid #d8e2f5;border-top-color:var(--acc);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lt{color:#6b7488;font-size:14px;font-weight:600}
+.slow{font-size:13px;color:#8b93ad}.slow a{color:var(--acc);font-weight:600}
+</style>
+</head>
+<body>
+<div class="vbar"><span class="b">航铂教育</span><span class="nm" id="nm"></span><a id="open" target="_blank" rel="noopener">在新标签打开 ↗</a></div>
+<div class="stage">
+  <iframe id="fr" title="PDF"></iframe>
+  <div class="load" id="load">
+    <div class="spin"></div>
+    <div class="lt">正在加载 PDF…</div>
+    <div class="slow" id="slow" style="display:none">加载较慢？<a id="open2" target="_blank" rel="noopener">点此直接打开</a></div>
+  </div>
+</div>
+<script>
+var p=new URLSearchParams(location.search).get("f")||"";
+var src=p.split("/").map(encodeURIComponent).join("/");
+var name=decodeURIComponent((p.split("/").pop()||"")).replace(/\.pdf$/i,"");
+document.getElementById("nm").textContent=name;
+if(name)document.title="航铂教育 · "+name;
+document.getElementById("open").href=src;
+document.getElementById("open2").href=src;
+var fr=document.getElementById("fr"),load=document.getElementById("load");
+fr.onload=function(){load.classList.add("hide");};
+if(src)fr.src=src; else load.querySelector(".lt").textContent="未指定文件";
+setTimeout(function(){var s=document.getElementById("slow");if(!load.classList.contains("hide"))s.style.display="block";},6000);
+</script>
+</body>
+</html>'''
+open(os.path.join(ROOT, "viewer.html"), "w", encoding="utf-8").write(VIEWER)
+print("viewer.html written:", len(VIEWER), "bytes")
